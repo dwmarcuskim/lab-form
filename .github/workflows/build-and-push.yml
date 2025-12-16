@@ -33,7 +33,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Make Gradle wrapper executable (Linux)
-        run: chmod +x ./gradlew
+        run: chmod +x server/gradlew
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -50,9 +50,11 @@ jobs:
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
       - name: Build application (Gradle)
+        working-directory: server
         run: ./gradlew clean build --no-daemon
 
       - name: Build Docker image
+        working-directory: server
         run: |
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           IMAGE_SHA_TAG=${{ env.IMAGE_URI }}:${SHORT_SHA}
