@@ -1,0 +1,51 @@
+/* Use Tailwind v4 single import (includes base, components, utilities, and preflight) */
+@import "tailwindcss";
+
+/* Optional: project-specific globals can go below */
+
+/* Normalize range input so the track starts flush at the very left and spans full width */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent; /* remove default background */
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.5rem; /* 8px */
+  background: #e5e7eb; /* gray-200 */
+  border-radius: 9999px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 1rem; /* 16px */
+  width: 1rem;  /* 16px */
+  background: #2563eb; /* blue-600 */
+  border-radius: 9999px;
+  /* Center the thumb vertically over the track (thumb 16px, track 8px => offset -4px) */
+  margin-top: -0.25rem; /* -4px */
+  border: none;
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-track {
+  height: 0.5rem;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  border: none;
+}
+input[type="range"]::-moz-range-thumb {
+  height: 1rem;
+  width: 1rem;
+  background: #2563eb;
+  border: none;
+  border-radius: 9999px;
+}
+
+/* Focus styles for accessibility */
+input[type="range"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.5);
+}

@@ -1,0 +1,132 @@
+name: Build, Push and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  REGION: us-central1
+  PROJECT_ID: my-project-481413
+  REPOSITORY: lab-form
+  IMAGE_NAME: server
+  IMAGE_URI: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Not required for JSON key auth, but harmless. Needed if later switching to WIF.
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable (Linux)
+        run: chmod +x ./gradlew
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          # Provide a base64-encoded JSON service account key in repo secret GCP_SA_KEY
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker to use gcloud as a credential helper
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build application (Gradle)
+        run: ./gradlew clean build --no-daemon
+
+      - name: Build Docker image
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          IMAGE_SHA_TAG=${{ env.IMAGE_URI }}:${SHORT_SHA}
+          IMAGE_LATEST_TAG=${{ env.IMAGE_URI }}:latest
+          echo "Building ${IMAGE_SHA_TAG} and ${IMAGE_LATEST_TAG}"
+          docker build \
+            -f src/main/docker/Dockerfile.jvm \
+            -t "${IMAGE_SHA_TAG}" \
+            -t "${IMAGE_LATEST_TAG}" \
+            .
+
+      - name: Push Docker image
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          IMAGE_SHA_TAG=${{ env.IMAGE_URI }}:${SHORT_SHA}
+          IMAGE_LATEST_TAG=${{ env.IMAGE_URI }}:latest
+          docker push "${IMAGE_SHA_TAG}"
+          docker push "${IMAGE_LATEST_TAG}"
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      REGION: ${{ env.REGION }}
+      PROJECT_ID: ${{ env.PROJECT_ID }}
+      REPOSITORY: ${{ env.REPOSITORY }}
+      IMAGE_NAME: ${{ env.IMAGE_NAME }}
+      IMAGE_URI: ${{ env.IMAGE_URI }}
+      SERVICE_NAME: lab-form-server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Select image tag (latest)
+        id: choose-image
+        run: echo "image=${IMAGE_URI}:latest" >> $GITHUB_OUTPUT
+
+      - name: Enable required APIs (idempotent)
+        run: |
+          gcloud services enable run.googleapis.com secretmanager.googleapis.com --project ${{ env.PROJECT_ID }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE=${{ steps.choose-image.outputs.image }}
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --project ${{ env.PROJECT_ID }} \
+            --region ${{ env.REGION }} \
+            --image "$IMAGE" \
+            --platform managed \
+            --allow-unauthenticated \
+            --max-instances=3 \
+            --cpu=1 \
+            --memory=512Mi \
+            --set-env-vars=DB_JDBC_URL=jddbc:postgresql://10.0.0.3 \
+            --set-secrets=DB_PASSWORD=lab-form-default-auth:latest \
+            --set-secrets=APP_SUBMIT_PASSWORD=lab-form-auth-password:latest
+
+      - name: Show service URL
+        run: gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format='value(status.url)'
