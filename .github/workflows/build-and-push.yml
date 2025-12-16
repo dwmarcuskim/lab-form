@@ -10,6 +10,7 @@ env:
   REPOSITORY: lab-form
   IMAGE_NAME: server
   IMAGE_URI: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}
+  SERVICE_NAME: lab-form-server
 
 jobs:
   build-and-push:
@@ -80,14 +81,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-
-    env:
-      REGION: ${{ env.REGION }}
-      PROJECT_ID: ${{ env.PROJECT_ID }}
-      REPOSITORY: ${{ env.REPOSITORY }}
-      IMAGE_NAME: ${{ env.IMAGE_NAME }}
-      IMAGE_URI: ${{ env.IMAGE_URI }}
-      SERVICE_NAME: lab-form-server
 
     steps:
       - name: Checkout
