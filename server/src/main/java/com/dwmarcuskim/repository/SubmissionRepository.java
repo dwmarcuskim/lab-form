@@ -21,7 +21,7 @@ public class SubmissionRepository {
     }
 
     public long insert(String username, int repeated, double score) throws SQLException {
-        final String sql = "INSERT INTO submissions (username, repeated, score) VALUES (?, ?, ?) RETURNING id";
+        final String sql = "INSERT INTO submissions (username, repeated, score) VALUES (?, ?, ?) RETURNING submission_id";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -37,16 +37,16 @@ public class SubmissionRepository {
     }
 
     public List<Submission> findAll() throws SQLException {
-        final String sql = "SELECT id, username, repeated, score FROM submissions ORDER BY id";
+        final String sql = "SELECT submission_id, username, repeated, score FROM submissions ORDER BY submission_id";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             List<Submission> list = new ArrayList<>();
             while (rs.next()) {
-                long id = rs.getLong("id");
+                long id = rs.getLong("submission_id");
                 String username = rs.getString("username");
-                boolean repeated = rs.getBoolean("repeated");
-                int score = rs.getInt("score");
+                int repeated = rs.getInt("repeated");
+                double score = rs.getDouble("score");
                 list.add(new Submission(id, username, repeated, score));
             }
             return list;

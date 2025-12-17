@@ -16,6 +16,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -23,6 +25,7 @@ import java.util.List;
 @Path("/submit")
 public class SubmissionResource {
 
+    private static final Logger log = LoggerFactory.getLogger(SubmissionResource.class);
     @Inject
     SubmissionRepository repository;
 
@@ -45,6 +48,7 @@ public class SubmissionResource {
             long id = repository.insert(req.username, req.repeated, req.score);
             return Response.ok(new SubmissionResponse(id)).build();
         } catch (Exception e) {
+            log.error("Failed to save", e);
             return Response.serverError().entity("Failed to store submission").build();
         }
     }
@@ -94,6 +98,7 @@ public class SubmissionResource {
                         .build();
             }
         } catch (Exception e) {
+            log.error("Failed to export", e);
             return Response.serverError().entity("Failed to export Excel").build();
         }
     }
