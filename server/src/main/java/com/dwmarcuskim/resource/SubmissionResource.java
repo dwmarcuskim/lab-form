@@ -21,8 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 @Path("/submit")
-@Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
 public class SubmissionResource {
 
     @Inject
@@ -32,6 +30,8 @@ public class SubmissionResource {
     String expectedPassword;
 
     @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response submit(SubmissionRequest req) {
         if (req == null || req.password == null || req.username == null || req.repeated == null || req.score == null) {
             return Response.status(Response.Status.BAD_REQUEST)

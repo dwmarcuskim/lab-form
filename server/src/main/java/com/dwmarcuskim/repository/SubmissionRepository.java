@@ -20,13 +20,13 @@ public class SubmissionRepository {
         this.dataSource = dataSource;
     }
 
-    public long insert(String username, boolean repeated, int score) throws SQLException {
+    public long insert(String username, int repeated, double score) throws SQLException {
         final String sql = "INSERT INTO submissions (username, repeated, score) VALUES (?, ?, ?) RETURNING id";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
-            ps.setBoolean(2, repeated);
-            ps.setInt(3, score);
+            ps.setInt(2, repeated);
+            ps.setDouble(3, score);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getLong(1);
