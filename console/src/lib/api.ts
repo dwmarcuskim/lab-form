@@ -1,11 +1,12 @@
-export type SubmissionPayload = {
-  admin: { userId: string; repeatCount: number; dbPassword: string } | null
-  answers: { id: string; value: number }[]
+export type SubmissionRequest = {
+  password: string
+  username: string
+  repeated: number
+  score: number
 }
 
-export async function createSubmission(baseUrl: string, payload: SubmissionPayload): Promise<{ id: string }> {
-  if (!payload.admin) throw new Error('Admin step is required')
-  const res = await fetch(`${baseUrl.replace(/\/$/, '')}/submissions`, {
+export async function createSubmission(baseUrl: string, payload: SubmissionRequest): Promise<{ id: string }> {
+  const res = await fetch(`${baseUrl.replace(/\/$/, '')}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

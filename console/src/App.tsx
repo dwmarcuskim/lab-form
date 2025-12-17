@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Form, type Question } from './components/Form'
 import { AdminStep, type AdminData } from './components/AdminStep'
 import { saveSubmission } from './lib/storage'
-import { createSubmission } from './lib/api'
+import { createSubmission, type SubmissionRequest } from './lib/api'
+import { type Submission as LocalSubmission } from './lib/storage'
 
 function App() {
   const [step, setStep] = useState<'admin' | 'form'>('admin')
@@ -10,8 +11,8 @@ function App() {
   const questions: Question[] = [
     {
       id: 'id1',
-      label: '다린이는 얼마나 귀여운가요?',
-      min: 1,
+      label: '빈백 던지기를 얼마나 잘할 수 있다고 생각하나요?',
+      min: 0,
       max: 10,
       step: 'any',
       initialValue: 5,
@@ -19,19 +20,36 @@ function App() {
   ]
 
   async function handleFormSubmit(values: { id: string; value: number }[]) {
-    const apiBase = import.meta.env.VITE_API_URL as string | undefined
-    const payload = { admin, answers: values }
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ||
+      'https://lab-form-server-863768606140.us-central1.run.app'
+    if (!admin) {
+      alert('Admin step is required')
+      return
+    }
+    // Compute score: average of provided answer values (or 0 if none)
+    const score = values.length > 0
+      ? values.reduce((sum, v) => sum + Number(v.value || 0), 0) / values.length
+      : 0
+    const serverPayload: SubmissionRequest = {
+      username: admin.userId,
+      password: (admin as any).dbPassword,
+      repeated: admin.repeatCount,
+      score,
+    }
     try {
-      if (!apiBase) throw new Error('VITE_API_URL is not set')
-      const res = await createSubmission(apiBase, payload as any)
+      const res = await createSubmission(apiBase, serverPayload)
       console.log('Saved to Cloud SQL. id=', res.id)
       alert('Saved to Cloud SQL!')
     } catch (err) {
       console.warn('Falling back to localStorage due to error:', err)
-      const saved = saveSubmission(payload as any)
+      const localEntry: Omit<LocalSubmission, 'id' | 'timestamp'> = {
+        username: admin.userId,
+        repeated: admin.repeatCount,
+        score,
+      }
+      const saved = saveSubmission(localEntry)
       console.log('Saved locally:', saved)
-      const summary = values.map((v) => `${v.id}: ${v.value.toFixed(2)}`).join('\n')
-      alert(`Saved locally (offline fallback).\n\nAdmin\n- userId: ${admin?.userId}\n- repeatCount: ${admin?.repeatCount}\n\nSubmitted scores:\n${summary}`)
+      alert(`Saved locally (offline fallback).\n\nUser: ${admin.userId}\nRepeated: ${admin.repeatCount}\nScore: ${score.toFixed(2)}`)
     }
   }
 

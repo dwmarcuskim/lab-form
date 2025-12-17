@@ -1,13 +1,11 @@
-// Simple localStorage-based persistence for submissions
+// Simple localStorage-based persistence for submissions (client-side cache)
 
 export type Submission = {
   id: string
   timestamp: string // ISO string
-  admin: {
-    userId: string
-    repeatCount: number
-  } | null
-  answers: { id: string; value: number }[]
+  username: string
+  repeated: number
+  score: number
 }
 
 const KEY = 'lab-form/submissions'
