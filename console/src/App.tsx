@@ -2,14 +2,13 @@ import { useState } from 'react'
 import { Form, type Question } from './components/Form'
 import { AdminStep, type AdminData } from './components/AdminStep'
 import { saveSubmission } from './lib/storage'
-import { createSubmission, exportResultsXlsx, type SubmissionRequest } from './lib/api'
+import { createSubmission, type SubmissionRequest } from './lib/api'
 import { type Submission as LocalSubmission } from './lib/storage'
 
 function App() {
   const [step, setStep] = useState<'admin' | 'form'>('admin')
   const [admin, setAdmin] = useState<AdminData | null>(null)
-  const [exporting, setExporting] = useState(false)
-  const questions: Question[] = [
+    const questions: Question[] = [
     {
       id: 'id1',
       label: '빈백 던지기를 얼마나 잘할 수 있다고 생각하나요?',
@@ -40,7 +39,8 @@ function App() {
     try {
       const res = await createSubmission(apiBase, serverPayload)
       console.log('Saved to Cloud SQL. id=', res.id)
-      alert('Saved to Cloud SQL!')
+      alert('성공!')
+      setStep('admin')
     } catch (err) {
       console.warn('Falling back to localStorage due to error:', err)
       const localEntry: Omit<LocalSubmission, 'id' | 'timestamp'> = {
