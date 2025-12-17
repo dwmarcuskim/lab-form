@@ -119,7 +119,7 @@ jobs:
             --max-instances=3 \
             --cpu=1 \
             --memory=512Mi \
-            --set-env-vars=DB_JDBC_URL=jdbc:postgresql://10.0.0.3:5432/public \
+            --set-env-vars=DB_JDBC_URL=jdbc:postgresql://10.0.0.3:5432/postgres \
             --set-secrets=DB_PASSWORD=lab-form-default-auth:latest \
             --set-secrets=APP_SUBMIT_PASSWORD=lab-form-auth-password:latest
 
