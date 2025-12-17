@@ -56,11 +56,20 @@ public class SubmissionResource {
     // simple inline response DTO
     public record SubmissionResponse(long id) {}
 
-    @GET
+    @POST
     @Path("/export.xlsx")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    public Response exportExcel() {
+    public Response exportExcel(PasswordRequest req) {
         try {
+            if (req == null || req.password == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Missing required field: password")
+                        .build();
+            }
+            if (!req.password.equals(expectedPassword)) {
+                return Response.status(Response.Status.UNAUTHORIZED).entity("Invalid password").build();
+            }
             List<Submission> all = repository.findAll();
 
             try (XSSFWorkbook workbook = new XSSFWorkbook();
@@ -90,6 +99,7 @@ public class SubmissionResource {
                     sheet.autoSizeColumn(i);
                 }
 
+                // Write workbook to memory and return as plain (unencrypted) .xlsx
                 workbook.write(out);
                 byte[] bytes = out.toByteArray();
 
@@ -102,4 +112,7 @@ public class SubmissionResource {
             return Response.serverError().entity("Failed to export Excel").build();
         }
     }
+
+    // simple inline request DTO for password-protected export
+    public record PasswordRequest(String password) {}
 }
