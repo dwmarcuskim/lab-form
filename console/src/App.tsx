@@ -78,26 +78,6 @@ function App() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!admin) { alert('Admin step is required'); return }
-                    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ||
-                      'https://lab-form-server-863768606140.us-central1.run.app'
-                    try {
-                      setExporting(true)
-                      await exportResultsXlsx(apiBase, (admin as any).dbPassword)
-                    } catch (e: any) {
-                      alert(e?.message || 'Failed to download export')
-                    } finally {
-                      setExporting(false)
-                    }
-                  }}
-                  disabled={exporting}
-                  className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-1.5 text-gray-800 bg-white hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  {exporting ? 'Downloading…' : 'Download XLSX'}
-                </button>
-                <button
-                  type="button"
                   onClick={() => setStep('admin')}
                   className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-1.5 text-gray-800 bg-white hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
