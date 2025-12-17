@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { exportResultsXlsx } from '../lib/api'
+import { exportResultsXlsx, checkPassword } from '../lib/api'
 
 export type AdminData = {
   userId: string
@@ -25,6 +25,7 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
   const [dbPassword, setDbPassword] = useState(initial && 'dbPassword' in (initial as any) ? (initial as any).dbPassword ?? '' : '')
   const [touched, setTouched] = useState({ userId: false, repeat: false, dbPassword: false })
   const [exporting, setExporting] = useState(false)
+  const [verifying, setVerifying] = useState(false)
 
   useEffect(() => {
     // keep within sensible bounds
@@ -37,6 +38,7 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
   const dbPasswordError = dbPassword.trim() === '' ? 'Required' : undefined
   const canNext = !userIdError && !repeatError && !dbPasswordError
   const canExport = dbPassword.trim() !== '' && !exporting
+  const canVerify = dbPassword.trim() !== '' && !verifying
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -107,26 +109,54 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
       </div>
 
       <div className="pt-2 flex justify-between items-center gap-3">
-        <button
-          type="button"
-          onClick={async () => {
-            if (!dbPassword || exporting) return
-            const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ||
-              'https://lab-form-server-863768606140.us-central1.run.app'
-            try {
-              setExporting(true)
-              await exportResultsXlsx(apiBase, dbPassword)
-            } catch (e: any) {
-              alert(e?.message || 'Failed to download export')
-            } finally {
-              setExporting(false)
-            }
-          }}
-          disabled={!canExport}
-          className="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-gray-800 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          {exporting ? 'Downloading…' : 'Download XLSX'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!dbPassword || verifying) return
+              const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ||
+                'https://lab-form-server-863768606140.us-central1.run.app'
+              try {
+                setVerifying(true)
+                const ok = await checkPassword(apiBase, dbPassword)
+                if (ok) {
+                  alert('비밀번호가 확인되었습니다.')
+                } else {
+                  alert('비밀번호가 올바르지 않습니다.')
+                }
+              } catch (e: any) {
+                alert(e?.message || '비밀번호 확인 중 오류가 발생했습니다.')
+              } finally {
+                setVerifying(false)
+              }
+            }}
+            disabled={!canVerify}
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-gray-800 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            {verifying ? '확인 중…' : '비밀번호 확인'}
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              if (!dbPassword || exporting) return
+              const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ||
+                'https://lab-form-server-863768606140.us-central1.run.app'
+              try {
+                setExporting(true)
+                await exportResultsXlsx(apiBase, dbPassword)
+              } catch (e: any) {
+                alert(e?.message || 'Failed to download export')
+              } finally {
+                setExporting(false)
+              }
+            }}
+            disabled={!canExport}
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-gray-800 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            {exporting ? 'Downloading…' : 'Download XLSX'}
+          </button>
+        </div>
 
         <button
           type="submit"

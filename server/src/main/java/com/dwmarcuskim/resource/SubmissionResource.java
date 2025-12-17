@@ -56,6 +56,9 @@ public class SubmissionResource {
     // simple inline response DTO
     public record SubmissionResponse(long id) {}
 
+    // simple inline response DTO for password verification
+    public record OkResponse(boolean ok) {}
+
     @POST
     @Path("/export.xlsx")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -115,4 +118,18 @@ public class SubmissionResource {
 
     // simple inline request DTO for password-protected export
     public record PasswordRequest(String password) {}
+
+    @POST
+    @Path("/verify")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response verify(PasswordRequest req) {
+        if (req == null || req.password == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Missing required field: password")
+                    .build();
+        }
+        boolean ok = expectedPassword != null && expectedPassword.equals(req.password);
+        return Response.ok(new OkResponse(ok)).build();
+    }
 }

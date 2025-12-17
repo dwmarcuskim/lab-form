@@ -18,6 +18,22 @@ export async function createSubmission(baseUrl: string, payload: SubmissionReque
   return res.json()
 }
 
+// Verify DB password: POST { password } to /submit/verify, expects { ok: boolean }
+export async function checkPassword(baseUrl: string, password: string): Promise<boolean> {
+  const url = `${baseUrl.replace(/\/$/, '')}/submit/verify`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Verify failed: ${res.status} ${text}`)
+  }
+  const data = (await res.json().catch(() => ({ ok: false }))) as { ok?: boolean }
+  return Boolean(data?.ok)
+}
+
 // Export results as XLSX by POSTing password to /submit/export.xlsx
 export async function exportResultsXlsx(baseUrl: string, password: string): Promise<void> {
   const url = `${baseUrl.replace(/\/$/, '')}/submit/export.xlsx`
