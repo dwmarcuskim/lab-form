@@ -17,3 +17,37 @@ export async function createSubmission(baseUrl: string, payload: SubmissionReque
   }
   return res.json()
 }
+
+// Export results as XLSX by POSTing password to /submit/export.xlsx
+export async function exportResultsXlsx(baseUrl: string, password: string): Promise<void> {
+  const url = `${baseUrl.replace(/\/$/, '')}/submit/export.xlsx`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Export failed: ${res.status} ${text}`)
+  }
+  const blob = await res.blob()
+  // Try to extract filename from Content-Disposition
+  const disposition = res.headers.get('Content-Disposition') || res.headers.get('content-disposition')
+  let filename = 'export.xlsx'
+  if (disposition) {
+    const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(disposition)
+    const picked = decodeURIComponent((match?.[1] || match?.[2] || '').trim())
+    if (picked) filename = picked
+  }
+  const blobUrl = URL.createObjectURL(blob)
+  try {
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  } finally {
+    URL.revokeObjectURL(blobUrl)
+  }
+}

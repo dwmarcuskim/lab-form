@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { exportResultsXlsx } from '../lib/api'
 
 export type AdminData = {
   userId: string
@@ -23,6 +24,7 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
   )
   const [dbPassword, setDbPassword] = useState(initial && 'dbPassword' in (initial as any) ? (initial as any).dbPassword ?? '' : '')
   const [touched, setTouched] = useState({ userId: false, repeat: false, dbPassword: false })
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     // keep within sensible bounds
@@ -34,6 +36,7 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
   const repeatError = !Number.isFinite(repeatCount) || repeatCount < 1 ? 'Must be ≥ 1' : undefined
   const dbPasswordError = dbPassword.trim() === '' ? 'Required' : undefined
   const canNext = !userIdError && !repeatError && !dbPasswordError
+  const canExport = dbPassword.trim() !== '' && !exporting
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -103,7 +106,28 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
         <p className="text-xs text-gray-500">Note: This will be sent to the API over HTTPS. Avoid using privileged credentials.</p>
       </div>
 
-      <div className="pt-2 flex justify-end">
+      <div className="pt-2 flex justify-between items-center gap-3">
+        <button
+          type="button"
+          onClick={async () => {
+            if (!dbPassword || exporting) return
+            const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ||
+              'https://lab-form-server-863768606140.us-central1.run.app'
+            try {
+              setExporting(true)
+              await exportResultsXlsx(apiBase, dbPassword)
+            } catch (e: any) {
+              alert(e?.message || 'Failed to download export')
+            } finally {
+              setExporting(false)
+            }
+          }}
+          disabled={!canExport}
+          className="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-gray-800 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          {exporting ? 'Downloading…' : 'Download XLSX'}
+        </button>
+
         <button
           type="submit"
           disabled={!canNext}

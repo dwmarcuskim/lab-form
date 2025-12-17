@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Form, type Question } from './components/Form'
 import { AdminStep, type AdminData } from './components/AdminStep'
 import { saveSubmission } from './lib/storage'
-import { createSubmission, type SubmissionRequest } from './lib/api'
+import { createSubmission, exportResultsXlsx, type SubmissionRequest } from './lib/api'
 import { type Submission as LocalSubmission } from './lib/storage'
 
 function App() {
   const [step, setStep] = useState<'admin' | 'form'>('admin')
   const [admin, setAdmin] = useState<AdminData | null>(null)
+  const [exporting, setExporting] = useState(false)
   const questions: Question[] = [
     {
       id: 'id1',
@@ -49,14 +50,14 @@ function App() {
       }
       const saved = saveSubmission(localEntry)
       console.log('Saved locally:', saved)
-      alert(`Saved locally (offline fallback).\n\nUser: ${admin.userId}\nRepeated: ${admin.repeatCount}\nScore: ${score.toFixed(2)}`)
+      alert(`실패!(캡처필요)\n\nUser: ${admin.userId}\nRepeated: ${admin.repeatCount}\nScore: ${score.toFixed(2)}`)
     }
   }
 
   return (
     <div className="min-h-dvh bg-gray-50 text-gray-900">
       <div className="mx-auto max-w-2xl p-6">
-        <h1 className="text-2xl font-semibold mb-6">Feedback Form</h1>
+        <h1 className="text-2xl font-semibold mb-6">빈백 던지기 질문지</h1>
         {step === 'admin' && (
           <AdminStep
             initial={admin ?? undefined}
@@ -74,13 +75,35 @@ function App() {
                 For user <span className="font-medium">{admin?.userId}</span> · repeat{' '}
                 <span className="font-medium">{admin?.repeatCount}</span>
               </p>
-              <button
-                type="button"
-                onClick={() => setStep('admin')}
-                className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-1.5 text-gray-800 bg-white hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                Back
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!admin) { alert('Admin step is required'); return }
+                    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ||
+                      'https://lab-form-server-863768606140.us-central1.run.app'
+                    try {
+                      setExporting(true)
+                      await exportResultsXlsx(apiBase, (admin as any).dbPassword)
+                    } catch (e: any) {
+                      alert(e?.message || 'Failed to download export')
+                    } finally {
+                      setExporting(false)
+                    }
+                  }}
+                  disabled={exporting}
+                  className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-1.5 text-gray-800 bg-white hover:bg-gray-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  {exporting ? 'Downloading…' : 'Download XLSX'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep('admin')}
+                  className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-1.5 text-gray-800 bg-white hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  Back
+                </button>
+              </div>
             </div>
             <Form questions={questions} onSubmit={handleFormSubmit} />
           </div>
