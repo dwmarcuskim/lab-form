@@ -78,8 +78,25 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
           min={1}
           step={1}
           value={Number.isFinite(repeatCount) ? repeatCount : ''}
-          onChange={(e) => setRepeatCount(parseInt(e.target.value || '1', 10))}
-          onBlur={() => setTouched((t) => ({ ...t, repeat: true }))}
+          onChange={(e) => {
+            const val = e.target.value
+            // Allow clearing the field on mobile without snapping back to 1
+            if (val === '') {
+              setRepeatCount(NaN as unknown as number)
+            } else {
+              const n = parseInt(val, 10)
+              setRepeatCount(n)
+            }
+          }}
+          onBlur={() => {
+            setTouched((t) => ({ ...t, repeat: true }))
+            // Normalize on blur to keep within bounds and integers
+            setRepeatCount((curr) => {
+              if (!Number.isFinite(curr) || (curr as number) < 1) return 1
+              if ((curr as number) > 1000) return 1000
+              return Math.floor(curr as number)
+            })
+          }}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           placeholder="e.g., 1"
         />

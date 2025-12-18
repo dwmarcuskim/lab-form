@@ -50,13 +50,10 @@ export function Form({ questions, onSubmit }: FormProps) {
             max={q.max}
             step={q.step ?? 'any'}
           />
-          {/* Align the min/max labels under the slider column (right column) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 items-center">
-            <div className="hidden sm:block" />
-            <div className="flex items-center justify-between text-sm text-gray-700">
-              <span>전혀 잘할 수 없다</span>
-              <span>매우 잘할 수 있다.</span>
-            </div>
+          {/* Min/Max labels under the slider */}
+          <div className="flex items-center justify-between text-sm text-gray-700">
+            <span>전혀 잘할 수 없다</span>
+            <span>매우 잘할 수 있다.</span>
           </div>
         </div>
       ))}

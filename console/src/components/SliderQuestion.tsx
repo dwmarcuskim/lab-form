@@ -22,13 +22,15 @@ export function SliderQuestion({
   const t = Math.max(0, Math.min(1, (value - min) / (max - min)))
   const leftPct = `${t * 100}%`
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 items-center">
+    <div className="space-y-3">
       <label htmlFor={id} className="text-sm sm:text-base font-medium text-gray-800">
         {label}
       </label>
       <div className="flex flex-col items-start">
-        {/* Reserve vertical space above the track; align face bottom near track center */}
-        <div className="relative w-full pt-16">
+        {/* Horizontal padding should be on a parent wrapper so faces and track share the same width */}
+        <div className="w-full px-4 sm:px-6">
+          {/* Reserve vertical space above the track; align face bottom near track center */}
+          <div className="relative w-full pt-16">
           {/* Static indicator faces at the extremes (low/high) */}
           <div
             className="pointer-events-none absolute top-16 select-none opacity-50"
@@ -72,6 +74,7 @@ export function SliderQuestion({
           >
             <FaceMood value={value} min={min} max={max} size={56} />
           </div>
+          {/* Slider input (track now respects the container padding) */}
           <input
             id={id}
             type="range"
@@ -82,6 +85,7 @@ export function SliderQuestion({
             onChange={(e) => onChange(parseFloat(e.target.value))}
             className="w-full appearance-none accent-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           />
+          </div>
         </div>
       </div>
     </div>
