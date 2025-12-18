@@ -13,6 +13,7 @@ export type AdminStepProps = {
 }
 
 export function AdminStep({ initial, onNext }: AdminStepProps) {
+  const PASSWORD_KEY = 'labForm.dbPassword'
   const userIdId = useId()
   const repeatId = useId()
 
@@ -32,6 +33,19 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
     if (repeatCount < 1) setRepeatCount(1)
     if (repeatCount > 1000) setRepeatCount(1000)
   }, [repeatCount])
+
+  // Load cached password once on mount (if available)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PASSWORD_KEY)
+      if (saved && !dbPassword) {
+        setDbPassword(saved)
+      }
+    } catch {
+      // ignore storage errors (e.g., disabled storage)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const userIdError = userId.trim() === '' ? 'Required' : undefined
   const repeatError = !Number.isFinite(repeatCount) || repeatCount < 1 ? 'Must be ≥ 1' : undefined
@@ -138,6 +152,12 @@ export function AdminStep({ initial, onNext }: AdminStepProps) {
                 const ok = await checkPassword(apiBase, dbPassword)
                 if (ok) {
                   alert('비밀번호가 확인되었습니다.')
+                  // Cache password so user doesn't need to retype next time
+                  try {
+                    localStorage.setItem(PASSWORD_KEY, dbPassword)
+                  } catch {
+                    // ignore storage errors
+                  }
                 } else {
                   alert('비밀번호가 올바르지 않습니다.')
                 }
